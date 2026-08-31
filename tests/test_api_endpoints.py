@@ -11,6 +11,13 @@ async def test_health_endpoint(test_client):
     assert data["service"] == "echo-second-brain"
 
 @pytest.mark.asyncio
+async def test_web_ui_serving(test_client):
+    response = await test_client.get("/")
+    assert response.status_code == 200
+    assert "ECHO" in response.text
+    assert "Memory Core" in response.text
+
+@pytest.mark.asyncio
 async def test_chat_and_facts_lifecycle(test_client):
     # Mock Gemini call to ensure deterministic test without consuming API quota in unit tests
     mock_llm_response = MergedChatResponse(

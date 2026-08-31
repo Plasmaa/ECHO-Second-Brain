@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ECHO — Second Brain & Personal Memory Agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-orb">
+          <div class="orb-core"></div>
+          <div class="orb-pulse"></div>
+        </div>
+        <div class="brand-text">
+          <h1>ECHO <span class="badge">MEMORY AGENT</span></h1>
+          <p class="subtitle">Your proactive second brain with dual memory recall</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="status-indicator">
+          <span class="status-dot"></span>
+          <span class="status-text" id="status-label">Memory Online</span>
+        </div>
+        <button id="toggle-memory-btn" class="icon-btn" title="Toggle Memory Core">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+          </svg>
+          <span>Memory Core</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="workspace">
+      <!-- Chat Section -->
+      <section class="chat-section">
+        <div class="chat-messages" id="chat-messages">
+          <div class="welcome-card">
+            <div class="welcome-icon">🧠</div>
+            <h2>Welcome to ECHO</h2>
+            <p>I learn and remember details about your life automatically as we talk. Everything from your job, relationships, goals, and daily updates is indexed into long-term memory.</p>
+            <div class="quick-prompts">
+              <button class="quick-chip" data-prompt="My name is Alex and I'm a Senior AI Engineer at CyberLabs in Austin.">"I work as a Senior AI Engineer at CyberLabs in Austin"</button>
+              <button class="quick-chip" data-prompt="I love dark roast coffee and climbing on weekends.">"I love dark roast coffee and climbing"</button>
+              <button class="quick-chip" data-prompt="What do you currently remember about me?">"What do you remember about me?"</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat Input Bar -->
+        <div class="chat-input-container">
+          <div class="input-wrapper">
+            <textarea
+              id="chat-input"
+              placeholder="Tell ECHO about your day, goals, thoughts, or ask anything..."
+              rows="1"
+              autofocus
+            ></textarea>
+            <button id="send-btn" class="send-btn" title="Send message (Enter)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+              </svg>
+            </button>
+          </div>
+          <div class="input-hints">
+            <span>Press <kbd>Enter</kbd> to send, <kbd>Shift + Enter</kbd> for newline</span>
+            <span class="sync-status" id="sync-status">⚡ Auto-indexing active</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Memory Core Sidebar -->
+      <aside class="memory-sidebar" id="memory-sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 6h16M4 12h16M4 18h7" />
+            </svg>
+            <h3>Memory Core</h3>
+          </div>
+          <button id="refresh-facts-btn" class="icon-btn-small" title="Refresh memory facts">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Search / Filter -->
+        <div class="search-box">
+          <input type="text" id="memory-search" placeholder="Search remembered facts..." />
+        </div>
+
+        <!-- Facts Stats -->
+        <div class="memory-stats">
+          <div class="stat-card">
+            <span class="stat-num" id="active-facts-count">0</span>
+            <span class="stat-label">Active Facts</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-num" id="entities-count">0</span>
+            <span class="stat-label">Entities</span>
+          </div>
+        </div>
+
+        <!-- Facts List -->
+        <div class="facts-list" id="facts-list">
+          <div class="empty-facts">No facts stored yet. Start conversing with ECHO to build your memory!</div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Fact History / Edit Modal -->
+    <div class="modal-overlay" id="history-modal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="modal-title">Fact Supersession History</h3>
+          <button class="modal-close" id="modal-close-btn">&times;</button>
+        </div>
+        <div class="modal-body" id="modal-body">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

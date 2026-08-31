@@ -1,7 +1,11 @@
 import logging
+import os
+from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from api.config import settings
 from api.db.session import init_db
@@ -33,7 +37,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS setup for Web UI and third-party clients
+# CORS setup
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -42,7 +46,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount Routes
+# Mount API Routes
 app.include_router(chat_router)
 app.include_router(facts_router)
 
@@ -55,6 +59,15 @@ async def health_check():
         "embedding_model": settings.GEMINI_EMBEDDING_MODEL,
         "embedding_dimension": settings.EMBEDDING_DIMENSION,
     }
+
+# Mount Static Web UI
+WEB_DIR = Path(__file__).resolve().parent.parent / "web"
+if WEB_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(WEB_DIR)), name="static")
+
+    @app.get("/", include_in_schema=False)
+    async def serve_web_ui():
+        return FileResponse(str(WEB_DIR / "index.html"))
 
 if __name__ == "__main__":
     import uvicorn
