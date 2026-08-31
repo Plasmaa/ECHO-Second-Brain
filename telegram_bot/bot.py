@@ -1,18 +1,18 @@
 import os
 import logging
+import asyncio
 import httpx
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.request import HTTPXRequest
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters, Application
 
-# Load environment variables
 load_dotenv()
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
-logger = logging.getLogger("echo_telegram_bot")
+logger = logging.getLogger("echo.telegram")
 
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 API_BASE_URL = os.environ.get("ECHO_API_URL", "http://localhost:8000")
@@ -115,12 +115,12 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.error(f"Error processing Telegram message: {e}")
         await update.message.reply_text(f"⚠️ Connection error: {e}")
 
-def main():
-    if not TELEGRAM_BOT_TOKEN or TELEGRAM_BOT_TOKEN == "your_telegram_bot_token_here":
-        logger.error("TELEGRAM_BOT_TOKEN is not configured in .env. Please set it to run the Telegram bot.")
-        return
+def create_telegram_app() -> Application:
+    """Builds and configures the Telegram bot application instance."""
+    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    if not token or token == "your_telegram_bot_token_here":
+        raise ValueError("TELEGRAM_BOT_TOKEN is not set.")
 
-    # Use HTTPXRequest with increased timeout settings
     t_request = HTTPXRequest(
         connect_timeout=30.0,
         read_timeout=30.0,
@@ -128,15 +128,20 @@ def main():
         pool_timeout=30.0
     )
 
-    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).request(t_request).build()
-
+    app = ApplicationBuilder().token(token).request(t_request).build()
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("facts", facts_command))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
+    return app
 
-    logger.info("Starting ECHO Telegram Bot (@Echo_my_second_brain_bot)...")
-    app.run_polling()
+def main():
+    try:
+        app = create_telegram_app()
+        logger.info("Starting ECHO Telegram Bot standalone polling...")
+        app.run_polling()
+    except Exception as e:
+        logger.error(f"Could not start bot: {e}")
 
 if __name__ == "__main__":
     main()

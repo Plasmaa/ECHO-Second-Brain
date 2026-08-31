@@ -51,9 +51,14 @@ async def init_db():
             await conn.run_sync(Base.metadata.create_all)
         logger.info("Local SQLite database initialized successfully.")
 
+def get_session_factory():
+    """Returns current active AsyncSessionLocal factory."""
+    return AsyncSessionLocal
+
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """FastAPI dependency for obtaining an async database session."""
-    async with AsyncSessionLocal() as session:
+    factory = get_session_factory()
+    async with factory() as session:
         try:
             yield session
         finally:

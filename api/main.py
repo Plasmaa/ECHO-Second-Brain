@@ -1,5 +1,6 @@
-import logging
 import os
+import logging
+import asyncio
 from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -19,15 +20,44 @@ logging.basicConfig(
 )
 logger = logging.getLogger("echo")
 
+# Reference to background telegram bot app
+telegram_app = None
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Initializing ECHO Second Brain Database...")
+    global telegram_app
+    logger.info("🧠 Initializing ECHO Second Brain Database...")
     try:
         await init_db()
-        logger.info("Database schema initialized successfully.")
+        logger.info("✅ Database schema initialized successfully.")
     except Exception as e:
-        logger.error(f"Error during database initialization: {e}")
+        logger.error(f"❌ Error during database initialization: {e}")
+
+    # Start Telegram Bot in background if token is configured
+    bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    if bot_token and bot_token != "your_telegram_bot_token_here":
+        try:
+            from telegram_bot.bot import create_telegram_app
+            telegram_app = create_telegram_app()
+            await telegram_app.initialize()
+            await telegram_app.start()
+            await telegram_app.updater.start_polling()
+            logger.info("📱 ECHO Telegram Bot (@Echo_my_second_brain_bot) started in background.")
+        except Exception as e:
+            logger.warning(f"Could not automatically start Telegram Bot: {e}")
+
     yield
+
+    # Shutdown Telegram bot cleanly
+    if telegram_app and telegram_app.updater and telegram_app.updater.running:
+        logger.info("Stopping Telegram Bot...")
+        try:
+            await telegram_app.updater.stop()
+            await telegram_app.stop()
+            await telegram_app.shutdown()
+        except Exception as e:
+            logger.warning(f"Error during bot shutdown: {e}")
+
     logger.info("ECHO Second Brain shutting down.")
 
 app = FastAPI(
@@ -58,6 +88,7 @@ async def health_check():
         "chat_model": settings.GEMINI_CHAT_MODEL,
         "embedding_model": settings.GEMINI_EMBEDDING_MODEL,
         "embedding_dimension": settings.EMBEDDING_DIMENSION,
+        "telegram_bot_active": telegram_app is not None and getattr(telegram_app.updater, "running", False),
     }
 
 # Mount Static Web UI

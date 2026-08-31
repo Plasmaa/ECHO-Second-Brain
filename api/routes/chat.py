@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, BackgroundTasks, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.db.session import get_db, AsyncSessionLocal
+from api.db.session import get_db, get_session_factory
 from api.llm.schemas import ExtractedFact, MergedChatResponse
 from api.llm.prompts import format_context_prompt
 from api.llm.gemini_client import generate_merged_chat_response, compute_embedding
@@ -31,7 +31,8 @@ async def _compute_and_save_embeddings(user_msg_id: str, user_content: str, assi
         user_emb = await compute_embedding(user_content)
         assistant_emb = await compute_embedding(assistant_content)
 
-        async with AsyncSessionLocal() as session:
+        session_factory = get_session_factory()
+        async with session_factory() as session:
             if user_emb:
                 await update_message_embedding(session, user_msg_id, user_emb)
             if assistant_emb:
