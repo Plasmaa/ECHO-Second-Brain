@@ -3,6 +3,7 @@ import logging
 import httpx
 from dotenv import load_dotenv
 from telegram import Update
+from telegram.request import HTTPXRequest
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
 # Load environment variables
@@ -20,13 +21,14 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler for /start command."""
     welcome_text = (
         "👋 *Hello! I am ECHO, your Second Brain & Personal Memory Agent.*\n\n"
-        "I remember your life, work, relationships, and goals across conversations.\n\n"
+        "I remember details about your life, work, relationships, and goals across conversations.\n\n"
         "Commands:\n"
         "• `/facts` — View what I currently remember about you\n"
         "• `/help` — How to interact with ECHO\n\n"
-        "Just send me a message to start chatting!"
+        "Send me any message to start chatting!"
     )
-    await update.message.reply_text(welcome_text, parse_mode="Markdown")
+    if update.message:
+        await update.message.reply_text(welcome_text, parse_mode="Markdown")
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler for /help command."""
@@ -38,13 +40,16 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• Send any regular message to chat with me\n"
         "• Use `/facts` to see all current active memories"
     )
-    await update.message.reply_text(help_text, parse_mode="Markdown")
+    if update.message:
+        await update.message.reply_text(help_text, parse_mode="Markdown")
 
 async def facts_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler for /facts command."""
+    if not update.message:
+        return
     await update.message.reply_chat_action("typing")
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=15.0) as client:
             res = await client.get(f"{API_BASE_URL}/facts")
             if res.status_code != 200:
                 await update.message.reply_text("⚠️ Could not reach ECHO Memory API.")
@@ -69,6 +74,9 @@ async def facts_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler for regular text messages."""
+    if not update.message or not update.message.text:
+        return
+
     user_text = update.message.text.strip()
     if not user_text:
         return
@@ -76,7 +84,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_chat_action("typing")
 
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=45.0) as client:
             res = await client.post(
                 f"{API_BASE_URL}/chat",
                 json={"platform": "telegram", "message": user_text}
@@ -112,14 +120,22 @@ def main():
         logger.error("TELEGRAM_BOT_TOKEN is not configured in .env. Please set it to run the Telegram bot.")
         return
 
-    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+    # Use HTTPXRequest with increased timeout settings
+    t_request = HTTPXRequest(
+        connect_timeout=30.0,
+        read_timeout=30.0,
+        write_timeout=30.0,
+        pool_timeout=30.0
+    )
+
+    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).request(t_request).build()
 
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("facts", facts_command))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
 
-    logger.info("Starting ECHO Telegram Bot polling...")
+    logger.info("Starting ECHO Telegram Bot (@Echo_my_second_brain_bot)...")
     app.run_polling()
 
 if __name__ == "__main__":
